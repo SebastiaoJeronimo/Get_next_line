@@ -6,7 +6,7 @@
 /*   By: scosta-j <scosta-j@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/02/10 22:32:57 by scosta-j          #+#    #+#             */
-/*   Updated: 2023/02/17 11:13:54 by scosta-j         ###   ########.fr       */
+/*   Updated: 2023/02/17 22:56:46 by scosta-j         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -27,7 +27,6 @@ char	*get_next_line(int fd)
 	int			i;
 
 	i = 0;
-	line = (char *) malloc(BUFFER_SIZE +1);
 	if (read(fd, 0, 0) < 0 || BUFFER_SIZE <= 0)
 	{
 		while (buffer[i])
@@ -37,69 +36,67 @@ char	*get_next_line(int fd)
 		}
 		return (NULL);
 	}
-	if (find_chr_index(buffer, 10) != -1)
-		return (treat_buffer_newline(buffer, line));
-	while (buffer[i])
+	line = NULL;
+	while (buffer[0] || read(fd, buffer, BUFFER_SIZE) > 0)
 	{
-		line[i] = buffer[i];
-		buffer[i] = 0;
-		i++;
+		line = ft_strjoin(line, buffer);
+		if (update_buffer(buffer))
+			break ;
 	}
-	line[i] = '\0';
-	return (read_line (fd, buffer, line));
-}
-
-char	*treat_buffer_newline(char *buffer, char *line)
-{
-	int	i;
-	int	j;
-
-	i = 0;
-	j = 0;
-	while (buffer[i])
-	{
-		if (i <= find_chr_index(buffer, 10))
-			line[i] = buffer[i];
-		else
-		{
-			buffer[j] = buffer[i];
-			j++;
-		}
-		i++;
-	}
-	while (buffer[j])
-	{
-			buffer[j] = 0;
-			j++;
-	}
-	line[i] = '\0';
 	return (line);
 }
 
-/**
- * this function reads the file until it reaches the end of it
- * or it reaches a new line character
-*/
-char	*read_line(int fd, char *buffer, char *line)
-{
-	int	nchr_read;
-	int	nline_flag;
+// char	*treat_buffer_newline(char *buffer, char *line)
+// {
+// 	int	i;
+// 	int	j;
 
-	nchr_read = 0;
-	nline_flag = 0;
-	while (1)
-	{
-		nchr_read = read (fd, buffer, BUFFER_SIZE);
-		buffer[nchr_read] = '\0';
-		if (nchr_read == 0)
-			return (line);
-		nline_flag = find_chr_index(buffer, 10);
-		if (nline_flag == -1)
-			line = update_line(buffer, line, BUFFER_SIZE);
-		else
-			return (update_line(buffer, line, nline_flag));
-	}
-}
+// 	i = 0;
+// 	j = 0;
+// 	while (buffer[i])
+// 	{
+// 		if (i <= find_chr_index(buffer, 10))
+// 			line[i] = buffer[i];
+// 		else
+// 		{
+// 			buffer[j] = buffer[i];
+// 			j++;
+// 		}
+// 		i++;
+// 	}
+// 	while (buffer[j])
+// 	{
+// 			buffer[j] = 0;
+// 			j++;
+// 	}
+// 	line[i] = '\0';
+// 	return (line);
+// }
+
+// /**
+//  * this function reads the file until it reaches the end of it
+//  * or it reaches a new line character
+// */
+// char	*read_line(int fd, char *buffer, char *line)
+// {
+// 	int	nchr_read;
+// 	int	nline_flag;
+
+// 	nchr_read = 0;
+// 	nline_flag = 0;
+// 	while (1)
+// 	{
+// 		nchr_read = read (fd, buffer, BUFFER_SIZE);
+// 		buffer[nchr_read] = '\0';
+// 		if (nchr_read == 0)
+// 			return (line);
+// 		nline_flag = find_chr_index(buffer, 10);
+// 		if (nline_flag == -1)
+// 			line = update_line(buffer, line, BUFFER_SIZE);
+// 		else
+// 			return (update_line(buffer, line, nline_flag));
+// 	}
+// }
 
 /**
  * this function returns the index of the char
@@ -109,20 +106,18 @@ char	*read_line(int fd, char *buffer, char *line)
  * return the string lenght
  * @returns the index where char was found or -1 if the chr isn't found
 */
-int	find_chr_index(char *str, int c)
+int	find_chr_index(char *str)
 {
 	int	i;
 
 	i = 0;
-	while (str[i])
-	{
-		if (str[i] == c)
-			return (i);
+	if (!str)
+		return (0);
+	while (str[i] && str[i] != '\n')
 		i++;
-	}
-	if (c == 0)
-		return (i);
-	return (-1);
+	if (str[i] == '\n')
+		i++;
+	return (i);
 }
 
 /**
@@ -134,24 +129,24 @@ int	find_chr_index(char *str, int c)
  * that is going to be copied to line 
  * and after that point what is going to be kept after cleaning the buffer
 */
-char	*update_line(char *buffer, char *line, int size)
+int	update_buffer(char *buffer)
 {
 	int	i;
+	int	j;
+	int	new_line;
 
 	i = 0;
-	line = ft_strjoin(line, buffer, size);
-	size++;
-	while (buffer[size + i])
+	j = 0;
+	new_line = 0;
+	while (buffer[i])
 	{
-		buffer[i] = buffer[size + i];
-		i++;
+		if (new_line)
+			buffer[j++] = buffer[i];
+		if (buffer[i] == '\n')
+			new_line = 1;
+		buffer[i++] = 0;
 	}
-	while (i <= 5)
-	{
-		buffer[i] = '\0';
-		i++;
-	}
-	return (line);
+	return (new_line);
 }
 
 /**
@@ -161,7 +156,7 @@ char	*update_line(char *buffer, char *line, int size)
  * @param s2 string thats going to be concatented as the preffix
  * @param size refers to the size of the s2 string thats going to be concatenated
 */
-char	*ft_strjoin(char *s1, char *s2, int size)
+char	*ft_strjoin(char *s1, char *s2)
 {
 	int		i;
 	int		strindex;
@@ -169,22 +164,18 @@ char	*ft_strjoin(char *s1, char *s2, int size)
 
 	i = 0;
 	strindex = 0;
-	str = (char *) malloc(find_chr_index(s1, 0) + find_chr_index(s2, 0) + 1);
+	str = malloc(find_chr_index(s1) + find_chr_index(s2) + 1);
 	if (!str)
 		return (0);
-	while (s1[i])
-	{
-		str[strindex] = s1[i];
-		strindex++;
-		i++;
-	}
+	while (s1 && s1[i])
+		str[strindex++] = s1[i++];
 	free (s1);
 	i = 0;
-	while (s2[i] && i <= size)
+	while (*s2)
 	{
-		str[strindex] = s2[i];
-		strindex++;
-		i++;
+		str[strindex++] = *s2;
+		if (*s2++ == '\n')
+			break ;
 	}
 	str[strindex] = '\0';
 	return (str);
@@ -212,3 +203,13 @@ int	main(void)
 	printf("line 5: %s \n", line);
 	free(line);
 }
+
+// int main(void)
+// {
+// 	static	char str[6] = "abc\nd";
+	
+// 	printf("%d \n",find_chr_index(NULL));
+// 	printf("%s" , ft_strjoin(NULL, "Abc\nD"));
+// 	printf("%d :number new line :string %s", update_buffer(str), str);
+// 	return (0);
+// }
